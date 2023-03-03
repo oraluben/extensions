@@ -64,6 +64,7 @@ export default function Command() {
   const [maxModelTokens, setMaxModelTokens] = useState<number>(maxTokensDavinci);
 
   const modelLimit = {} as modelTokenLimit;
+  modelLimit["gpt-3.5-turbo-0301"] = maxTokensDavinci;
   modelLimit["gpt-3.5-turbo"] = maxTokensDavinci;
   modelLimit["text-davinci-003"] = maxTokensDavinci;
   modelLimit["text-davinci-002"] = maxTokensDavinci;
@@ -120,8 +121,9 @@ export default function Command() {
     await showToast({ title: "Prompt Sent" });
     setIsLoading(true);
     try {
+      const isChatGpt = formRequest.model === "gpt-3.5-turbo-0301" || formRequest.model === "gpt-3.5-turbo"
       const completion: gptCompletion =
-        formRequest.model === "gpt-3.5-turbo"
+          isChatGpt
           ? await openai.createChatCompletion({
               model: formRequest.model,
               messages: [
@@ -148,10 +150,10 @@ export default function Command() {
             });
       await showToast({ title: "Answer Received" });
       const response =
-        formRequest.model === "gpt-3.5-turbo"
+        isChatGpt
           ? completion.data.choices[0].message.content
           : completion.data.choices[0].text;
-      setTextPrompt(textPrompt + response);
+      setTextPrompt(textPrompt + '\n' + response);
       setAnswer(response);
       setNumTokensPrompt(completion.data.usage.total_tokens);
     } catch (error) {
@@ -246,7 +248,11 @@ export default function Command() {
         id="model"
         title="AI Model"
         info={infoMessages.model}
-        onChange={(newValue: string) => setMaxModelTokens(modelLimit[newValue])}
+        onChange={(newValue: string) => {
+          setMaxModelTokens(modelLimit[newValue])
+          // todo: change max token
+          // todo: change token count logic for chinese
+        }}
       >
         {Object.keys(modelLimit).map((key) => {
           return <Form.Dropdown.Item key={key} value={key} title={key} />;
